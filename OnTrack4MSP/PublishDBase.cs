@@ -39,7 +39,7 @@ namespace OnTrackMSP
                 if (string.Compare(value, "1", true) == 0) return (true);
                 // return (Convert.ToBoolean(value)); -> throws exception if not false
             }
-            catch (System.Exception ex)
+            catch (System.Exception ex) when (!Env.Debugging)
             {
                 Debug.WriteLine(ex);
                 return false;
@@ -78,7 +78,10 @@ namespace OnTrackMSP
             }
             catch (System.Exception ex)
             {
-                return null;
+                DateTime? newDate = new DateTime?();
+                newDate = null;
+
+                return (DateTime ? ) null;
             }
         }
 
@@ -231,7 +234,7 @@ namespace OnTrackMSP
                 DBase.UpdateTask(taskdb);
 
             }
-            catch (System.Exception ex)
+            catch (System.Exception ex) when (!Env.Debugging)
             {
                 Debug.WriteLine(ex);
                 return false;

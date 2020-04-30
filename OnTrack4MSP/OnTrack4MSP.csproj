@@ -185,6 +185,7 @@
     can be found.
   -->
   <ItemGroup>
+    <Compile Include="env.cs" />
     <Compile Include="MSPUpdateExternalTasks.cs" />
     <Compile Include="Propierties.cs">
       <SubType>Form</SubType>

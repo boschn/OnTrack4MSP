@@ -178,7 +178,7 @@ namespace OnTrackMSP
                                         if (anExpression.ToUpper().Contains("START") ||
                                             String.IsNullOrEmpty(anExpression))
                                         {
-                                            if (anExternalTaskDb.Start.HasValue)
+                                            if (anExternalTaskDb.Start.Value != null)
                                             {
                                                 if ((exprNo == 1) || (String.Compare(aMSPTask.Start1, "NV") == 0)
                                                                   || (DateTime.Compare(aMSPTask.Start1,
@@ -196,7 +196,7 @@ namespace OnTrackMSP
                                         if (anExpression.ToUpper().Contains("FINISH") ||
                                             String.IsNullOrEmpty(anExpression))
                                         {
-                                            if (anExternalTaskDb.Finish.HasValue)
+                                            if (anExternalTaskDb.Finish.Value != null)
                                             {
                                                 if ((exprNo == 1) || (String.Compare(aMSPTask.Finish1, "NV") == 0)
                                                                   || (DateTime.Compare(aMSPTask.Finish1,
@@ -237,7 +237,7 @@ namespace OnTrackMSP
 
                             }
                         }
-                        catch (System.Exception ex)
+                        catch (System.Exception ex) when(!Env.Debugging)
                         {
                             Debug.WriteLine(ex);
                         }

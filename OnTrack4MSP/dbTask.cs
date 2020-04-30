@@ -114,6 +114,13 @@ namespace OnTrackMSP
             this.OutlineChildren = new List<string>();
             this.Resources = new List<string>();
             // this.UpdateStamp = DateTime.Now;
+            this.ActualFinish = new DateTime?();
+            this.ActualStart = new DateTime?();
+            this.Finish = new DateTime?();
+            this.Start = new DateTime?();
+            this.XtrnFinish = new DateTime?();
+            this.XtrnStart = new DateTime?();
+            this.XtrnUpdated = new DateTime?();
         }
         // Generate a random string with a given size    
         private static string RandomString(int size, bool lowerCase)

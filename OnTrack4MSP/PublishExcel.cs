@@ -64,7 +64,11 @@ namespace OnTrackMSP
                     p.Save();
                 }
             }
-            catch (Exception ex)
+            catch (System.IO.IOException ex) 
+            {
+                MessageBox.Show(icon: MessageBoxIcon.Error, caption: "Error", text: ex.Message + Environment.NewLine + ex.Source + Environment.NewLine + ex.Data, buttons: MessageBoxButtons.OK);
+            }
+            catch (Exception ex) when (!Env.Debugging)
             {
                 MessageBox.Show(icon: MessageBoxIcon.Error, caption: "Error", text: ex.Message + Environment.NewLine + ex.Source + Environment.NewLine + ex.Data, buttons: MessageBoxButtons.OK);
             }
@@ -131,11 +135,15 @@ namespace OnTrackMSP
                     //Save and close the package.
                     p.Save();
                 }
-            } catch (Exception ex)
+            } 
+            catch(System.IO.IOException ex)
             {
                 MessageBox.Show(icon: MessageBoxIcon.Error, caption: "Error", text: ex.Message + Environment.NewLine + ex.Source + Environment.NewLine + ex.Data, buttons: MessageBoxButtons.OK);
             }
-           
+            catch (Exception ex) when (!Env.Debugging)
+            {
+                MessageBox.Show(icon: MessageBoxIcon.Error, caption: "Error", text: ex.Message + Environment.NewLine + ex.Source + Environment.NewLine + ex.Data, buttons: MessageBoxButtons.OK);
+            }
         }
 
     }

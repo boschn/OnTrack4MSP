@@ -34,6 +34,7 @@ using System.Windows.Forms.VisualStyles;
 namespace OnTrackMSP
 {
     [ComVisible(true)]
+   
     public class MyRibbon : Office.IRibbonExtensibility
     {
         internal const string ConstPropertyName_ProjectId = "OnTrackMSP_ProjectID";

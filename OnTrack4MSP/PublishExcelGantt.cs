@@ -237,7 +237,7 @@ namespace OnTrackMSP
             foreach (var aTask in tasklist)
             {
                 // only active & not in the past
-                if (aTask.Finish.HasValue)
+                if (aTask.Finish.Value != null)
                     if (aTask.Finish > this.startGanttDate) 
                     {
                         // generate Table
@@ -257,6 +257,7 @@ namespace OnTrackMSP
             // autofit for table part
             try
             {
+                
                 ganttRange.Worksheet.Cells[2, 1, (int)this.MaxRow - 1,
                     (int)aTableEndCol].AutoFitColumns();
                 // freeze pane
@@ -271,7 +272,7 @@ namespace OnTrackMSP
                 ganttRange.Worksheet.Tables.Add(aRange, aTableName);
                 ganttRange.Worksheet.Tables[aTableName].ShowFilter = false;
 
-            } catch(Exception ex)
+            } catch(Exception ex) when(!Env.Debugging)
             {
                 Debug.Print(ex.Message);
                 MessageBox.Show(icon: MessageBoxIcon.Error, caption: "Error", text: ex.Message, buttons: MessageBoxButtons.OK);
@@ -411,27 +412,27 @@ namespace OnTrackMSP
                     case ColumnType.TaskStart:
                         if (task.ActualStart.HasValue)
                         {
-                            ganttRange[row, ourColumn].Value = task.ActualStart;
+                            ganttRange[row, ourColumn].Value = task.ActualStart.Value;
                             ganttRange[row, ourColumn].Style.Fill.SetBackground(Color.Green);
                         }
                         else
                         {
-                            ganttRange[row, ourColumn].Value = task.Start;
+                            ganttRange[row, ourColumn].Value = task.Start.Value;
                         }
                         break;
                     case ColumnType.TaskFinish:
                         if (task.ActualStart.HasValue && task.ActualFinish.HasValue)
                         {
-                            ganttRange[row, ourColumn].Value = task.ActualFinish;
+                            ganttRange[row, ourColumn].Value = task.ActualFinish.Value;
                             ganttRange[row, ourColumn].Style.Fill.SetBackground(Color.Green);
                         }
                         else if (task.ActualStart.HasValue && !task.ActualFinish.HasValue)
                         {
-                            ganttRange[row, ourColumn].Value = task.Finish;
+                            ganttRange[row, ourColumn].Value = task.Finish.Value;
                             ganttRange[row, ourColumn].Style.Fill.SetBackground(Color.Orange);
                         }
                         else
-                            ganttRange[row, ourColumn].Value = task.Finish;
+                            ganttRange[row, ourColumn].Value = task.Finish.Value;
                         break;
                     case ColumnType.TaskBaselinecode:
                         ganttRange[row, ourColumn].Value = task.BaselineCode;
@@ -529,7 +530,7 @@ namespace OnTrackMSP
             if (task.Start.HasValue)
                 aStartCol = GetGanttColumn(task.Start.Value);
             // take the end - milestone logic
-            else if (task.Finish.HasValue)
+            else if (task.Finish.HasValue )
                 aStartCol = GetGanttColumn(task.Finish.Value);
             else
             {
@@ -666,12 +667,12 @@ namespace OnTrackMSP
 
             // start Date - actual start
             if (!task.IsMilestone && task.Start.HasValue && !task.ActualStart.HasValue)
-                aComment += string.Format("' start on {0:yyyy-MM-dd}", task.Finish.Value);
+                aComment += string.Format("' start on {0:yyyy-MM-dd}", task.Start.Value);
             else if (!task.IsMilestone && task.ActualStart.HasValue)
-                aComment +=  string.Format("' started on {0:yyyy-MM-dd}", task.ActualFinish.Value);
+                aComment +=  string.Format("' started on {0:yyyy-MM-dd}", task.ActualStart.Value);
 
             // Finish Date - actual finish
-            if (task.Finish.HasValue && !task.ActualFinish.HasValue)
+            if (task.Finish.Value != null && !task.ActualFinish.HasValue)
                     aComment += string.Format("' finish on {0:yyyy-MM-dd}", task.Finish.Value);
                 else if (task.ActualFinish.HasValue)
                     aComment += string.Format("' finished on {0:yyyy-MM-dd}", task.ActualFinish.Value);
@@ -733,8 +734,7 @@ namespace OnTrackMSP
                     {
                         // if task is rollup and no summary
                         if (aTask.IsRollup & !aTask.IsSummary)
-                            if (aTask.Finish.HasValue)
-                             
+                            if (aTask.Finish.Value != null)
                             { 
                                 var i = GetGanttColumn(aTask.Finish.Value);
                                 // check if in the gantt
@@ -745,9 +745,7 @@ namespace OnTrackMSP
                                     ganttRange[row, col + i - 1].Style.Font.Size = 6;
                                     ganttRange[row, col + i - 1].Style.Font.Bold =true;
                                     CreateExcelComment(ganttRange[row, col + i - 1], GetTaskComment(aTask));
-                                                                    
                                 }
-                           
                             }
 
                         // recursion if this task is also a summary
