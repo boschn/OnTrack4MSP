@@ -1,0 +1,24 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<customUI xmlns="http://schemas.microsoft.com/office/2009/07/customui" onLoad="Ribbon_Load">
+  <ribbon>
+    <tabs>
+		<tab id="CustomTab1" label="OnTrack">
+			<group id="ContentGroup" label="In'n Out">
+				<button id="PublishButton" label="Publish to Database" imageMso="RecordsSaveRecord"
+					 screentip="Publish" onAction="OnPublishButton"
+					 supertip="Publish the current schedule to database"/>
+				<button id="RoadmapButton" label="Create Roadmap" imageMso="ExportExcel"
+					 screentip="Create Roadmap" onAction="OnCreateRoadmapButton"
+					 supertip="Create from the Database the current roadmap in Excel"/>
+				<button id="BaselineOverviewButton" label="Create Baseline Overview" imageMso="ExportExcel"
+				        screentip="Create Baseline Overview" onAction="OnCreateBaselineOverviewButton"
+				        supertip="Create from the Database the current baseline overview in Excel"/>
+				<button id="UpdateExternalButton" label="Update External Tasks" imageMso="AccessReportMore"
+				        screentip="Update external Tasks from Database" onAction="OnUpdateExternalButton"
+				        supertip="Update external Tasks from Database"/>
+			</group>
+		</tab>
+    </tabs>
+  </ribbon>
+</customUI>
+
