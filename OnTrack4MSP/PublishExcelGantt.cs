@@ -106,6 +106,7 @@ namespace OnTrackMSP
             new TableColumnDef(PublishExcelGantt.ColumnType.TaskResponsible, "Responsible", 5),
             new TableColumnDef(PublishExcelGantt.ColumnType.TaskProductRelease, "ProductRelease", 6),
             new TableColumnDef(PublishExcelGantt.ColumnType.TaskVariantName, "Variant", 7),
+            new TableColumnDef(PublishExcelGantt.ColumnType.TaskPredecessor, "Predecessor", 8),
         };
 
         // global definitions of the Gantt Class
@@ -254,20 +255,30 @@ namespace OnTrackMSP
                 (int) aTableEndCol + GetGanttColumn(endGanttDate.Value)];
 
             // autofit for table part
-            ganttRange.Worksheet.Cells[2, 1, (int)this.MaxRow - 1,
-                (int)aTableEndCol].AutoFitColumns();
+            try
+            {
+                ganttRange.Worksheet.Cells[2, 1, (int)this.MaxRow - 1,
+                    (int)aTableEndCol].AutoFitColumns();
+                // freeze pane
+                ganttRange.Worksheet.View.FreezePanes(3, (int)aTableEndCol + 1);
 
-            // freeze pane
-            ganttRange.Worksheet.View.FreezePanes(3,(int)aTableEndCol+1);
+                // save the whole as data table
+                var aTableName = Regex.Replace("table_" + ganttName, @"\s+", "_");
+                if (ganttRange.Worksheet.Tables[aTableName] != null)
+                    ganttRange.Worksheet.Tables.Delete(aTableName, false);
 
-            // save the whole as data table
-            var aTableName = Regex.Replace("table_" + ganttName, @"\s+", "_");
-            if (ganttRange.Worksheet.Tables[aTableName] != null)
-                ganttRange.Worksheet.Tables.Delete(aTableName, false);
+
+                ganttRange.Worksheet.Tables.Add(aRange, aTableName);
+                ganttRange.Worksheet.Tables[aTableName].ShowFilter = false;
+
+            } catch(Exception ex)
+            {
+                Debug.Print(ex.Message);
+                MessageBox.Show(icon: MessageBoxIcon.Error, caption: "Error", text: ex.Message, buttons: MessageBoxButtons.OK);
+                return false;
+            }
+
             
-            
-            ganttRange.Worksheet.Tables.Add(aRange, aTableName);
-            ganttRange.Worksheet.Tables[aTableName].ShowFilter = false;
             return true;
         }
 
@@ -398,10 +409,29 @@ namespace OnTrackMSP
                         ganttRange[row, ourColumn].Value = task.SBSCode;
                         break;
                     case ColumnType.TaskStart:
-                        ganttRange[row, ourColumn].Value = task.Start;
+                        if (task.ActualStart.HasValue)
+                        {
+                            ganttRange[row, ourColumn].Value = task.ActualStart;
+                            ganttRange[row, ourColumn].Style.Fill.SetBackground(Color.Green);
+                        }
+                        else
+                        {
+                            ganttRange[row, ourColumn].Value = task.Start;
+                        }
                         break;
                     case ColumnType.TaskFinish:
-                        ganttRange[row, ourColumn].Value = task.Finish;
+                        if (task.ActualStart.HasValue && task.ActualFinish.HasValue)
+                        {
+                            ganttRange[row, ourColumn].Value = task.ActualFinish;
+                            ganttRange[row, ourColumn].Style.Fill.SetBackground(Color.Green);
+                        }
+                        else if (task.ActualStart.HasValue && !task.ActualFinish.HasValue)
+                        {
+                            ganttRange[row, ourColumn].Value = task.Finish;
+                            ganttRange[row, ourColumn].Style.Fill.SetBackground(Color.Orange);
+                        }
+                        else
+                            ganttRange[row, ourColumn].Value = task.Finish;
                         break;
                     case ColumnType.TaskBaselinecode:
                         ganttRange[row, ourColumn].Value = task.BaselineCode;
@@ -436,35 +466,44 @@ namespace OnTrackMSP
                     case ColumnType.TaskPredecessor:
                     {
                         string aValue = "";
+                        List<dbTask> aTaskList = new List<dbTask>();
+
                         foreach (var anId in task.Predecessors)
                         {
                             var aTask = DBase.GetTask(anId);
                             if (aTask != null)
                             {
                                 if (!String.IsNullOrEmpty(aValue)) aValue += ",";
-                                aValue += " " + aTask.MSPUID;
+                                aValue +=  aTask.MSPUID;
+                                aTaskList.Add(aTask);
                             }
                         }
 
                         ganttRange[row, ourColumn].Value = aValue;
-                    }
+                        // add comment with details
+                        CreateExcelComment(ganttRange[row, ourColumn], GetTasksComment(aTaskList, "Predecessor Tasks"));
+                        }
                         break;
                     case ColumnType.TaskOutlineChildren:
                     {
                         string aValue = "";
+                        List<dbTask> aTaskList = new List<dbTask>();
                         foreach (var anId in task.OutlineChildren)
                         {
                             var aTask = DBase.GetTask(anId);
                             if (aTask != null)
                             {
                                 if (!String.IsNullOrEmpty(aValue)) aValue += ",";
-                                aValue += " " + aTask.MSPUID;
+                                aValue +=  aTask.MSPUID;
+                                aTaskList.Add(aTask);
                             }
 
                         }
 
                         ganttRange[row, ourColumn].Value = aValue;
-                    }
+                        // add comment with details
+                        CreateExcelComment(ganttRange[row, ourColumn], GetTasksComment(aTaskList, "Subtasks"));
+                        }
                         break;
                     default:
                         Debug.WriteLine("Definition enumeration not implemented in GenerateTableRow");
@@ -570,30 +609,13 @@ namespace OnTrackMSP
                 ganttRange[row, col + anEndCol - 1].Style.Font.Color.SetColor(aTextColor);
                 ganttRange[row, col + anEndCol - 1].Style.Font.Size = 6;
                 ganttRange[row, col + anEndCol - 1].Style.Font.Bold = true;
+                if (task.ActualFinish.HasValue)
+                    ganttRange[row, col + anEndCol - 1].Style.Font.Strike = true;
                 ganttRange[row, col + anEndCol - 1].Style.HorizontalAlignment = ExcelHorizontalAlignment.Center;
                 ganttRange[row, col + anEndCol - 1].Style.VerticalAlignment = ExcelVerticalAlignment.Center;
                 // add comment with details
-                if (ganttRange[row, col + anEndCol - 1].Comment == null)
-                {
-                    ganttRange[row, col + anEndCol - 1]
-                        .AddComment(
-                            "Milestone " + aMilestoneName + " from " + task.MSPUID + " '" +
-                            task.Name + string.Format("' finish on {0:yyyy-MM-dd}",
-                                task.Finish.Value),
-                            $"ontrack on {DateTime.Now.ToString("yyyy-MM-dd")}");
-                    ganttRange[row, col + anEndCol - 1].Comment.AutoFit = true;
-                }
-                else
-                {
-                    ganttRange[row, col + anEndCol - 1].Comment.Text =
-                        "Milestone " + aMilestoneName + "from " + task.MSPUID + " '" + task.Name +
-                        string.Format("' finish on {0:yyyy-MM-dd}", task.Finish.Value);
-
-                    ganttRange[row, col + anEndCol - 1].Comment.Author =
-                        $"OnTrackTool on {DateTime.Now.ToString("yyyy-MM-dd")}";
-
-                    ganttRange[row, col + anEndCol - 1].Comment.AutoFit = true;
-                }
+                CreateExcelComment(ganttRange[row, col + anEndCol - 1], GetTaskComment(task));
+               
             }
 
             // draw rollups
@@ -601,7 +623,97 @@ namespace OnTrackMSP
                 GenerateGanttRowRollup(row, col, task);
             return true;
         }
+        /// <summary>
+        /// add a comment from Task to excel
+        /// </summary>
+        /// <param name="row"></param>
+        /// <param name="col"></param>
+        /// <param name="comment"></param>
+        /// <returns></returns>
+        private string  GetTasksComment(IList<dbTask> tasks, string header = null)
+        {
+            string aComment = "";
 
+            // collect each Task description
+            foreach (var aTask in tasks)
+            {
+                if (!String.IsNullOrEmpty(aComment)) aComment += Environment.NewLine;
+                aComment += GetTaskComment(aTask);
+            }
+            return aComment;
+
+        }
+        /// <summary>
+        /// add a comment from Task to excel
+        /// </summary>
+        /// <param name="row"></param>
+        /// <param name="col"></param>
+        /// <param name="comment"></param>
+        /// <returns></returns>
+        private string  GetTaskComment(dbTask task, string header = null)
+        {
+            string aComment = "";
+
+                if (!String.IsNullOrEmpty(header)) aComment = header + Environment.NewLine;
+
+            // type of task
+            if (!String.IsNullOrEmpty(task.PlanType)) aComment += task.PlanType + " ";
+            if (task.IsMilestone && String.IsNullOrEmpty(task.PlanType)) aComment += "Milestone ";
+            if (!String.IsNullOrEmpty(task.RollupName)) aComment += "('" + task.RollupName + "') ";
+
+            // Task Identifier    
+            aComment += task.MSPUID + " '" + task.Name + "' ";
+
+            // start Date - actual start
+            if (!task.IsMilestone && task.Start.HasValue && !task.ActualStart.HasValue)
+                aComment += string.Format("' start on {0:yyyy-MM-dd}", task.Finish.Value);
+            else if (!task.IsMilestone && task.ActualStart.HasValue)
+                aComment +=  string.Format("' started on {0:yyyy-MM-dd}", task.ActualFinish.Value);
+
+            // Finish Date - actual finish
+            if (task.Finish.HasValue && !task.ActualFinish.HasValue)
+                    aComment += string.Format("' finish on {0:yyyy-MM-dd}", task.Finish.Value);
+                else if (task.ActualFinish.HasValue)
+                    aComment += string.Format("' finished on {0:yyyy-MM-dd}", task.ActualFinish.Value);
+            
+            return aComment;
+
+        }
+    /// <summary>
+    /// add a comment to excel
+    /// </summary>
+    /// <param name="row"></param>
+    /// <param name="col"></param>
+    /// <param name="comment"></param>
+    /// <returns></returns>
+    private bool CreateExcelComment(ExcelRange range, string comment)
+        {
+            string anAuthor = $"OnTrackTool on {DateTime.Now.ToString("yyyy-MM-dd")}";
+
+            // add comment with details
+            if (range.Comment == null)
+            {
+                // no comment ?!
+                if (String.IsNullOrEmpty(comment)) return false;
+                else
+                    range.AddComment(comment, anAuthor);
+            }
+               
+            else
+            {
+                if (String.IsNullOrEmpty(comment))
+                    //range.Worksheet.Comments.Remove(range.Comment);
+                    comment = "n/a";
+                
+                    range.Comment.Text = comment;
+                    range.Comment.Author = anAuthor;
+                
+            }
+            // Autofit
+            range.Comment.AutoFit = true;
+
+            return true;
+        }
         /// <summary>
         /// generate a gantt row for a rollup in the same projectId
         /// </summary>
@@ -632,28 +744,8 @@ namespace OnTrackMSP
                                     ganttRange[row, col + i - 1].Value = aTask.RollupName;
                                     ganttRange[row, col + i - 1].Style.Font.Size = 6;
                                     ganttRange[row, col + i - 1].Style.Font.Bold =true;
-                                    // add comment with details
-                                    if (ganttRange[row, col + i - 1].Comment == null)
-                                        {
-                                            ganttRange[row, col + i - 1]
-                                                .AddComment(
-                                                    "Milestone " + aTask.RollupName + " from " + aTask.MSPUID + " '" +
-                                                    aTask.Name + string.Format("' finish on {0:yyyy-MM-dd}",
-                                                        aTask.Finish.Value),
-                                                    $"ontrack on {DateTime.Now.ToString("yyyy-MM-dd")}");
-                                            ganttRange[row, col + i - 1].Comment.AutoFit = true;
-                                        }
-                                        else
-                                        {
-                                            ganttRange[row, col + i - 1].Comment.Text =
-                                                "Milestone " + aTask.RollupName + "from " + aTask.MSPUID + " '" + aTask.Name +
-                                                string.Format("' finish on {0:yyyy-MM-dd}", aTask.Finish.Value);
-
-                                            ganttRange[row, col + i - 1].Comment.Author =
-                                                $"OnTrackTool on {DateTime.Now.ToString("yyyy-MM-dd")}";
-
-                                            ganttRange[row, col + i - 1].Comment.AutoFit = true;
-                                        }
+                                    CreateExcelComment(ganttRange[row, col + i - 1], GetTaskComment(aTask));
+                                                                    
                                 }
                            
                             }

@@ -126,8 +126,7 @@ namespace OnTrackMSP
             }
 
             // messagebox
-            MessageBox.Show(DBase.GetTasks().Count() + @" records updated");
-
+            MessageBox.Show(icon: MessageBoxIcon.Information, caption: "Publish to Database done", text: DBase.GetTasks().Count() + @" records updated", buttons: MessageBoxButtons.OK);
         }
 
         /// <summary>
@@ -157,7 +156,7 @@ namespace OnTrackMSP
                 // resourceNames
                 taskdb.Resources.Clear();
                 if (!String.IsNullOrWhiteSpace(msptask.ResourceNames))
-                    foreach (string aValue in msptask.ResourceNames.Split(','))
+                    foreach (string aValue in msptask.ResourceNames.Split(new char[] { ',', ';' }))
                     {
                         if (!taskdb.Resources.Contains(aValue.ToUpper()))
                             taskdb.Resources.Add(aValue.ToUpper());
@@ -167,7 +166,7 @@ namespace OnTrackMSP
                 // predecessors lazy
                 taskdb.Predecessors.Clear(); // this is easier and lazy
                 if (!String.IsNullOrWhiteSpace(msptask.UniqueIDPredecessors))
-                    foreach (string aValue in msptask.UniqueIDPredecessors.Split(','))
+                    foreach (string aValue in msptask.UniqueIDPredecessors.Split(new char[] { ',', ';' }))
                     {
                         if (!String.IsNullOrWhiteSpace(aValue))
                         {

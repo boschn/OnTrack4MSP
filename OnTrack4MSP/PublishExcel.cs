@@ -6,6 +6,7 @@ using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading.Tasks;
+using System.Windows.Forms;
 using OfficeOpenXml;
 
 namespace OnTrackMSP
@@ -46,20 +47,29 @@ namespace OnTrackMSP
             var aFile = new FileInfo(filename);
             
             ExcelPackage.LicenseContext = LicenseContext.NonCommercial;
-            using (var p = new ExcelPackage(aFile))
+            try
             {
+                using (var p = new ExcelPackage(aFile))
+                {
 
-                //Create a worksheet "ProductRoadMap " + productrelease
-                
-                var ws = p.Workbook.Worksheets.FirstOrDefault(s => String.Compare(s.Name, "ProductRoadMap "+productrelease, StringComparison.CurrentCultureIgnoreCase) == 0);
-                if (ws==null) ws = p.Workbook.Worksheets.Add("ProductRoadMap " + productrelease);
+                    //Create a worksheet "ProductRoadMap " + productrelease
 
-                var aGantt = new PublishExcelGantt("ProductRoadMap " + productrelease,ws.SelectedRange, tasklist);
-                aGantt.Generate(PublishExcelGantt.RoadmapTableDef);
-                
-                //Save and close the package.
-                p.Save();
+                    var ws = p.Workbook.Worksheets.FirstOrDefault(s => String.Compare(s.Name, "ProductRoadMap " + productrelease, StringComparison.CurrentCultureIgnoreCase) == 0);
+                    if (ws == null) ws = p.Workbook.Worksheets.Add("ProductRoadMap " + productrelease);
+
+                    var aGantt = new PublishExcelGantt("ProductRoadMap " + productrelease, ws.SelectedRange, tasklist);
+                    aGantt.Generate(PublishExcelGantt.RoadmapTableDef);
+
+                    //Save and close the package.
+                    p.Save();
+                }
             }
+            catch (Exception ex)
+            {
+                MessageBox.Show(icon: MessageBoxIcon.Error, caption: "Error", text: ex.Message + Environment.NewLine + ex.Source + Environment.NewLine + ex.Data, buttons: MessageBoxButtons.OK);
+            }
+        
+           
         }
         /// <summary>
         /// publish Database to an Excel
@@ -105,20 +115,27 @@ namespace OnTrackMSP
             //Open the workbook (or create it if it doesn't exist)
             var aFile = new FileInfo(filename);
           
-            ExcelPackage.LicenseContext = LicenseContext.NonCommercial;
-            using (var p = new ExcelPackage(aFile))
+            try
             {
+                ExcelPackage.LicenseContext = LicenseContext.NonCommercial;
+                using (var p = new ExcelPackage(aFile))
+                {
 
-                //Create a worksheet "BaselineOverview " 
+                    //Create a worksheet "BaselineOverview " 
 
-                var ws = p.Workbook.Worksheets.FirstOrDefault(s => String.Compare(s.Name, "BaselineOverview", StringComparison.CurrentCultureIgnoreCase) == 0);
-                if (ws == null) ws = p.Workbook.Worksheets.Add("BaselineOverview");
+                    var ws = p.Workbook.Worksheets.FirstOrDefault(s => String.Compare(s.Name, "BaselineOverview", StringComparison.CurrentCultureIgnoreCase) == 0);
+                    if (ws == null) ws = p.Workbook.Worksheets.Add("BaselineOverview");
 
-                var aGantt = new PublishExcelGantt("BaselineOverview", ws.SelectedRange, tasklist);
-                aGantt.Generate(PublishExcelGantt.BaselineOverViewTableDef);
-                //Save and close the package.
-                p.Save();
+                    var aGantt = new PublishExcelGantt("BaselineOverview", ws.SelectedRange, tasklist);
+                    aGantt.Generate(PublishExcelGantt.BaselineOverViewTableDef);
+                    //Save and close the package.
+                    p.Save();
+                }
+            } catch (Exception ex)
+            {
+                MessageBox.Show(icon: MessageBoxIcon.Error, caption: "Error", text: ex.Message + Environment.NewLine + ex.Source + Environment.NewLine + ex.Data, buttons: MessageBoxButtons.OK);
             }
+           
         }
 
     }
